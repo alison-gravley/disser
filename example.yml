@@ -1,0 +1,31 @@
+# Note that commands or scripts that need sudoers permissions will either need
+# to be put here in clear text, or you need to edit your sudoers permissions
+# to not ask for a password for the specific commands.
+
+# Destination is optional
+# Understand that you can use wildcards, but you will need a destination
+# directory in that case.
+# You can use relative paths for your input, but will need destination as well
+source:
+  files:
+    - ~/disser_test/text_file1.txt
+    - /home/alison/disser_test/text_file99.txt
+    - /home/alison/disser_test/test_dir
+    - ~/disser_test/test_dir2/*.txt 
+    - /home/alison/disser_test/test_dir2/test_dir3/*.log
+    - /home/alison/disser_test/desty.txt:
+      destination: /home/alison/new_dest/desty.txt
+  scripts: #Ran in the order listed, after files and directories are copied
+    - /home/alison/disser_test/scrippy.sh
+target:
+  myserver1:
+    hostname: '192.168.2.42'
+    username: alison
+    password:  ""  #highly recommend against
+    port: 22 
+
+  myserver2:
+    hostname: '192.168.2.42'
+    username: alison
+    password:  ""  #highly recommend against
+    port: 22 
