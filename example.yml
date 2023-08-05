@@ -8,10 +8,10 @@
 # You can use relative paths for your input, but will need destination as well
 source:
   files:
-    - ~/disser_test/text_file1.txt
+    - ../disser_test/text_file1.txt
     - /home/alison/disser_test/text_file99.txt
     - /home/alison/disser_test/test_dir
-    - ~/disser_test/test_dir2/*.txt 
+    - ../disser_test/test_dir2/*.txt 
     - /home/alison/disser_test/test_dir2/test_dir3/*.log
     - /home/alison/disser_test/desty.txt:
       destination: /home/alison/new_dest/desty.txt

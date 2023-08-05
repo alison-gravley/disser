@@ -2,9 +2,8 @@ import logging
 import sys
 
 FORMATTER = logging.Formatter("%(asctime)s — %(name)s — %(levelname)s — %(message)s")
-Log_Only = True
+Log_Only = False
 Log_File = ""
-
 
 def get_stdout_handler() -> logging.StreamHandler:
     stdout_console = logging.StreamHandler(sys.stdout)
@@ -54,7 +53,7 @@ def get_logger_file_only(logger_name: str, filename: str) -> logging.Logger:
 def get_logger(logger_name: str) -> logging.Logger:
     global Log_Only
     global Log_File
-    if Log_Only:
+    if Log_Only and len(Log_File) > 0:
         return get_logger_file_only(logger_name, Log_File)
     else:
         return get_logger_console_only(logger_name)

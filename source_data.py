@@ -1,19 +1,10 @@
 import os
 import stat
 import glob
-import log
+import log_config
 import logging
 
-
-class Server:
-    def __init__(
-        self, hostname: str, username: str = "", password=None, port: int = 22
-    ) -> None:
-        self.hostname = hostname
-        self.username = username
-        self.password = password
-        self.port = port
-        self.log: logging.Logger = log.get_logger("Server")
+log: logging.Logger = log_config.get_logger("SourceData")
 
 
 class SourceData:
@@ -30,34 +21,34 @@ class SourceData:
         self.is_directory: bool = False
         self.is_valid: bool = True
         self.is_script: bool = is_script
-        self.log: logging.Logger = log.get_logger("SourceData")
 
     def parse_input(self) -> bool:
         if self.is_script:
-            if not self.determine_if_file:
-                self.log.error(
+            if not self.determine_if_file():
+                log.error(
                     "Source script is not a file. Unable to determine '{}'".format(
                         self.input
                     )
                 )
-            elif not self.determine_if_executable:
-                self.log.error(
+            elif not self.determine_if_executable():
+                log.error(
                     "Source script is not executable. Destination will not be able to run '{}'".format(
                         self.absolute
                     )
                 )
             else:
                 return True
-        elif self.determine_if_glob:
+        elif self.determine_if_glob():
             return True
-        elif self.determine_if_file:
+        elif self.determine_if_file():
             return True
-        elif self.determine_if_directory:
+        elif self.determine_if_directory():
             return True
         else:
-            self.log.error(
-                "Source data is not a file or folder. Unable to determine '{}'",
-                self.input,
+            log.error(
+                "Source data is not a file or folder. Unable to determine '{}'".format(
+                    self.input
+                )
             )
 
         self.is_valid = False
@@ -69,15 +60,11 @@ class SourceData:
             return False
 
         matching = glob.glob(self.input, include_hidden=True, recursive=True)
-        if len(matching) is 0:
-            self.log.warn(
-                "Glob {} does not match any files or folders.".format(self.input)
-            )
+        if len(matching) == 0:
+            log.warn("Glob {} does not match any files or folders.".format(self.input))
             self.glob_warn = True
         else:
-            self.log.info(
-                "Glob {} will match {} items.".format(self.input, len(matching))
-            )
+            log.info("Glob {} will match {} items.".format(self.input, len(matching)))
 
         return True
 
@@ -88,7 +75,7 @@ class SourceData:
         is_abs = os.path.isabs(self.input)
         if not is_abs:
             self.absolute = os.path.abspath(self.input)
-            self.log.info(
+            log.info(
                 "Expanding relative file path {} to absolute {}".format(
                     self.input, self.absolute
                 )
@@ -96,17 +83,17 @@ class SourceData:
         else:
             self.absolute = self.input
 
-        self.log.info("Source identified as file with path {}".format(self.absolute))
+        log.info("Source identified as file with path {}".format(self.absolute))
 
-        if len(self.destination) is 0:
-            self.log.info(
+        if len(self.destination) == 0:
+            log.info(
                 "Source file {} will be copied to same destination as source".format(
                     self.absolute
                 )
             )
             self.destination = self.absolute
         else:
-            self.log.info(
+            log.info(
                 "Source file {} will be copied to alternate destination {}".format(
                     self.absolute, self.destination
                 )
@@ -121,7 +108,7 @@ class SourceData:
         is_abs = os.path.isabs(self.input)
         if not is_abs:
             self.absolute = os.path.abspath(self.input)
-            self.log.info(
+            log.info(
                 "Expanding relative directory {} to absolute {}".format(
                     self.input, self.absolute
                 )
@@ -129,19 +116,17 @@ class SourceData:
         else:
             self.absolute = self.input
 
-        self.log.info(
-            "Source identified as directory with path {}".format(self.absolute)
-        )
+        log.info("Source identified as directory with path {}".format(self.absolute))
 
-        if len(self.destination) is 0:
-            self.log.info(
+        if len(self.destination) == 0:
+            log.info(
                 "Source directory {} will be copied to same destination as source".format(
                     self.absolute
                 )
             )
             self.destination = self.absolute
         else:
-            self.log.info(
+            log.info(
                 "Source directory {} will be copied to alternate destination {}".format(
                     self.absolute, self.destination
                 )
@@ -152,16 +137,29 @@ class SourceData:
         status = os.stat(self.absolute)
         readable_filemode = stat.filemode(status.st_mode)
         if readable_filemode.count("x") > 0:
-            self.log.info(
+            log.info(
                 "Source script {} is executable. Permissions are '{}'.".format(
                     self.absolute, readable_filemode
                 )
             )
             return True
         else:
-            self.log.warn(
+            log.warn(
                 "Source script {} is not executable. Permissions are '{}".format(
                     self.absolute, readable_filemode
                 )
             )
             return False
+
+    def get_source_list(self) -> list[str]:
+        if not self.is_valid:
+            return []
+        elif not self.is_glob:
+            return [self.absolute]
+        globbys: list[str] = []
+        for g in glob.glob(pathname=self.input, recursive=True, include_hidden=True):
+            if os.path.isabs(g):
+                globbys.append(g)
+            else:
+                globbys.append(os.path.abspath(g))
+        return globbys
