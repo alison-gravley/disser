@@ -2,9 +2,11 @@ import log_config
 import logging
 import os
 import pysftp
+import paramiko
+from typing import overload
 from server_data import Server
 from source_data import SourceData
-
+from pysftp import Connection
 
 log: logging.Logger = log_config.get_logger("Disser")
 
@@ -20,11 +22,11 @@ class Disser:
     def add_script_source(self, input: str, destination: str = ""):
         self.source_data.append(SourceData(input, destination, True))
 
-    def add_server(self, name: str, hostname: str, username, password, port: int):
-        self.targets.append(Server(name, hostname, username, password, port))
+    def add_server(self, server: Server):
+        self.targets.append(server)
 
-    def get_file_list(self) -> list[str]:
-        files: list[str] = []
+    def get_file_list(self) -> list[tuple[str, str]]:
+        files: list[tuple[str, str]] = []
         for sources in self.source_data:
             if sources.parse_input():
                 files.extend(sources.get_source_list())
@@ -34,19 +36,63 @@ class Disser:
             log.info(file)
         return files
 
-    def get_directory_list(self) -> list[str]:
-        return []
-
     def transfer_files(self):
-        files: list[str] = self.get_file_list()
+        files: list[tuple[str, str]] = self.get_file_list()
         for target in self.targets:
-            with pysftp.Connection(
-                host=target.hostname,
-                username=target.username,
-                password=target.password,
-                port=target.port,
-            ) as sftp:
-                for file in files:
-                    # first make the directories, then put the files. Will need to strip the filename off first
+            try:
+                port: int = 22
+                if target.port is not None:
+                    port = int(target.port)
+                with Connection(
+                    host=str(target.hostname),
+                    username=target.username,
+                    password=target.password,
+                    port=port,
+                    private_key=target.identity,
+                ) as sftp:
+                    for file in files:
+                        try:
+                            # first make the directories, then put the files. Will need to strip the filename off first
+                            directory_structure = os.path.dirname(file[0])
+                            sftp.makedirs(directory_structure)
+                            sftp.put(localpath=file[0], remotepath=file[1])
+                            log.info(
+                                "Successfully transferred ({}) to ({})".format(
+                                    file[0], file[1]
+                                )
+                            )
+                        except (OSError, IOError) as ose:
+                            log.error("Failed to transfer file {}".format(file))
+                            log.exception(ose)
 
-                    sftp.put(localpath=file, remotepath=file)
+            except pysftp.ConnectionException as conne:
+                log.error("Server ({}) unable to connect".format(target._to_string()))
+                log.exception(conne)
+            except (
+                pysftp.AuthenticationException,
+                pysftp.CredentialException,
+                pysftp.HostKeysException,
+                paramiko.PasswordRequiredException,
+                paramiko.SSHException,
+            ) as authe:
+                log.error(
+                    "Server ({}) is unable to authenticate or ssh.".format(
+                        target._to_string()
+                    )
+                )
+                log.exception(authe)
+
+    def transfer_files_with_connection(self, sftp: Connection):
+        files: list[tuple[str, str]] = self.get_file_list()
+        for file in files:
+            try:
+                # first make the directories, then put the files. Will need to strip the filename off first
+                directory_structure = os.path.dirname(file[0])
+                sftp.makedirs(directory_structure)
+                sftp.put(localpath=file[0], remotepath=file[1])
+                log.info(
+                    "Successfully transferred ({}) to ({})".format(file[0], file[1])
+                )
+            except (OSError, IOError) as ose:
+                log.error("Failed to transfer file {}".format(file))
+                log.exception(ose)

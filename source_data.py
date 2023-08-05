@@ -151,15 +151,15 @@ class SourceData:
             )
             return False
 
-    def get_source_list(self) -> list[str]:
+    def get_source_list(self) -> list[tuple[str, str]]:
         if not self.is_valid:
             return []
         elif not self.is_glob:
-            return [self.absolute]
-        globbys: list[str] = []
+            return [(self.absolute, self.destination)]
+        globbys: list[tuple[str, str]] = []
         for g in glob.glob(pathname=self.input, recursive=True, include_hidden=True):
             if os.path.isabs(g):
-                globbys.append(g)
+                globbys.append((g, g))
             else:
-                globbys.append(os.path.abspath(g))
+                globbys.append((os.path.abspath(g), os.path.abspath(g)))
         return globbys

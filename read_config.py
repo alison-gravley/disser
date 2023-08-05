@@ -2,6 +2,7 @@ import yaml
 import os
 import log_config
 import logging
+import server_data
 from disser import Disser
 from server_data import Server
 from source_data import SourceData
@@ -203,88 +204,14 @@ class DisserImport:
                     )
                 )
             else:
-                self.parse_server(keys, targets[keys])
+                s = server_data.parse_server_tag(keys, targets[keys])
+                if s is None:
+                    log.error(
+                        "Server ({}) has an invalid configuration. Ignoring.".format(
+                            keys
+                        )
+                    )
+                else:
+                    self.disser.add_server(s)
 
         return len(self.disser.targets) > 0
-
-    def parse_hostname_tag(self, hostname) -> bool:
-        if type(hostname) is not str:
-            log.error(
-                "Required field Hostname {} is not of type str. Type is {}.".format(
-                    hostname, type(hostname)
-                )
-            )
-            return False
-        else:
-            return True
-
-    def parse_username_tag(self, username):
-        if type(username) is not str:
-            log.error(
-                "Username {} is not of type str. Type is {}.".format(
-                    username, type(username)
-                )
-            )
-            return None
-        else:
-            return username
-
-    def parse_password_tag(self, password):
-        if type(password) is not str:
-            log.error(
-                "Password {} is not of type str. Type is {}.".format(
-                    password, type(password)
-                )
-            )
-            return None
-        elif len(password) == 0:
-            return None
-        else:
-            return password
-
-    def parse_port_tag(self, port) -> int:
-        if type(port) is not int:
-            log.error(
-                "Port {} is not of type int. Type is {}.".format(port, type(port))
-            )
-            return 22
-        else:
-            return port
-
-    def parse_server(self, name: str, server: dict) -> bool:
-        found_hostname: bool = False
-        hostname: str = ""
-        username = None
-        password = None
-        port: int = 22
-        for keys in server:
-            match keys:
-                case "hostname":
-                    found_hostname = self.parse_hostname_tag(server[keys])
-                    if found_hostname:
-                        hostname = server[keys]
-                    else:
-                        return False
-                case "username":
-                    username = self.parse_username_tag(server[keys])
-                case "password":
-                    password = self.parse_password_tag(server[keys])
-                case "port":
-                    port = self.parse_port_tag(server[keys])
-                case _:
-                    log.error("Unknown tag {} under Source. Ignoring.".format(keys))
-        if not found_hostname:
-            log.error("Required field Hostname missing from server {}.".format(name))
-            return False
-
-        log.info(
-            "Target {} parsed with hostname '{}', username '{}', password '{}', port '{}'".format(
-                name,
-                hostname,
-                username,
-                (lambda: "****", lambda: "NONE")[password is None](),
-                port,
-            )
-        )
-        self.disser.add_server(name, hostname, username, password, port)
-        return True

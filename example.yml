@@ -19,13 +19,5 @@ source:
     - /home/alison/disser_test/scrippy.sh
 target:
   myserver1:
-    hostname: '192.168.2.42'
-    username: alison
-    password:  ""  #highly recommend against
-    port: 22 
-
-  myserver2:
-    hostname: '192.168.2.42'
-    username: alison
-    password:  ""  #highly recommend against
-    port: 22 
+    hostkey: 'k2'
+    sshconfig: /home/alison/.ssh/config
