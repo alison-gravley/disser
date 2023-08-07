@@ -53,7 +53,12 @@ class Disser:
                             # first make the directories, then put the files. Will need to strip the filename off first
                             directory_structure = os.path.dirname(file[0])
                             sftp.mkdir_p(directory_structure)
-                            sftp.put(localfile=file[0], remotepath=file[1])
+                            # TODO - Need to deal with directories separately. :(
+                            sftp.put(
+                                localfile=file[0],
+                                remotepath=file[1],
+                                logger=log,
+                            )
                             log.info(
                                 "Successfully transferred ({}) to ({})".format(
                                     file[0], file[1]
