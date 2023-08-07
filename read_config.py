@@ -4,7 +4,6 @@ import log_config
 import logging
 import server_data
 from disser import Disser
-from server_data import Server
 from source_data import SourceData
 
 log: logging.Logger = log_config.get_logger("DisserImport")

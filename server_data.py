@@ -1,9 +1,9 @@
 import log_config
 import logging
 import os
-from paramiko.client import SSHClient
 from paramiko import SSHConfig
 from paramiko import SSHConfigDict
+from enum import Enum
 
 log: logging.Logger = log_config.get_logger("Server")
 
@@ -27,9 +27,7 @@ class Server:
         self.port = port
         self.sshconfig = sshconfig
         self.hostkey = hostkey
-        self.identity = identity
-        self.identity_is_rsa = False
-        self.identity_is_ed25519 = False
+        self.identity_file = identity
 
         if self.sshconfig is not None:
             self.parse_sshconfig()
@@ -45,14 +43,8 @@ class Server:
             self.port,
             self.sshconfig,
             self.hostkey,
-            self.identity,
+            self.identity_file,
         )
-
-    # TODO - Apparently I have to fucking specify the keytype or paramiko vomits all over it
-    # paramiko.Ed25519Key.from_private_key_file
-    # paramiko.RSAKey.from_private_key_file
-    def get_identity_key_type(self):
-        pass
 
     def parse_sshconfig(self):
         if self.sshconfig is None:
@@ -101,7 +93,7 @@ class Server:
                                     host_config[field][0]
                                 )
                             )
-                        self.identity = host_config[field][0]
+                        self.identity_file = host_config[field][0]
                     case _:
                         log.warn(
                             "Unknown field ({}) in hostkey ({})".format(
@@ -113,8 +105,8 @@ class Server:
         if self.hostname is None:
             log.error("Missing hostname from configuration. Invalid config.")
             return False
-        if self.password is None and self.identity is None:
-            log.error("Missing password without identity. Invalid config.")
+        if self.password is None and self.identity_file is None:
+            log.error("Missing password without valid identity. Invalid config.")
             return False
         return True
 
@@ -141,6 +133,7 @@ def parse_port_tag(port) -> int:
         return port
 
 
+@staticmethod
 def parse_server_tag(name: str, server: dict) -> Server | None:
     hostname = None
     username = None

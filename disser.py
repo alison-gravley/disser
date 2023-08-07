@@ -1,12 +1,10 @@
 import log_config
 import logging
 import os
-import pysftp
-import paramiko
-from typing import overload
 from server_data import Server
 from source_data import SourceData
-from pysftp import Connection
+from sftpretty import CnOpts, Connection
+import sftpretty
 
 log: logging.Logger = log_config.get_logger("Disser")
 
@@ -48,14 +46,14 @@ class Disser:
                     username=target.username,
                     password=target.password,
                     port=port,
-                    private_key=target.identity,
+                    private_key=target.identity_file,
                 ) as sftp:
                     for file in files:
                         try:
                             # first make the directories, then put the files. Will need to strip the filename off first
                             directory_structure = os.path.dirname(file[0])
-                            sftp.makedirs(directory_structure)
-                            sftp.put(localpath=file[0], remotepath=file[1])
+                            sftp.mkdir_p(directory_structure)
+                            sftp.put(localfile=file[0], remotepath=file[1])
                             log.info(
                                 "Successfully transferred ({}) to ({})".format(
                                     file[0], file[1]
@@ -65,15 +63,16 @@ class Disser:
                             log.error("Failed to transfer file {}".format(file))
                             log.exception(ose)
 
-            except pysftp.ConnectionException as conne:
+            except sftpretty.ConnectionException as conne:
                 log.error("Server ({}) unable to connect".format(target._to_string()))
                 log.exception(conne)
             except (
-                pysftp.AuthenticationException,
-                pysftp.CredentialException,
-                pysftp.HostKeysException,
-                paramiko.PasswordRequiredException,
-                paramiko.SSHException,
+                sftpretty.CredentialException,
+                sftpretty.HostKeysException,
+                sftpretty.SSHException,
+                sftpretty.PasswordRequiredException,
+                sftpretty.LoggingException,
+                sftpretty.SSHException,
             ) as authe:
                 log.error(
                     "Server ({}) is unable to authenticate or ssh.".format(
@@ -88,8 +87,8 @@ class Disser:
             try:
                 # first make the directories, then put the files. Will need to strip the filename off first
                 directory_structure = os.path.dirname(file[0])
-                sftp.makedirs(directory_structure)
-                sftp.put(localpath=file[0], remotepath=file[1])
+                sftp.mkdir_p(directory_structure)
+                sftp.put(localfile=file[0], remotepath=file[1])
                 log.info(
                     "Successfully transferred ({}) to ({})".format(file[0], file[1])
                 )
