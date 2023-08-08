@@ -94,6 +94,8 @@ class Server:
                                 )
                             )
                         self.identity_file = host_config[field][0]
+                    case "user":
+                        self.username = host_config[field]
                     case _:
                         log.warn(
                             "Unknown field ({}) in hostkey ({})".format(

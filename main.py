@@ -21,8 +21,8 @@ def main(input_file: str, log_file):
 
         if import_ok:
             main_logger.info("Successfully loaded configuration.")
-            config.disser.get_file_list()
             config.disser.transfer_files()
+            config.disser.run_scripts()
         else:
             main_logger.error("Failed to import configuration.")
 

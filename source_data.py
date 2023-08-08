@@ -21,8 +21,11 @@ class SourceData:
         self.is_directory: bool = False
         self.is_valid: bool = True
         self.is_script: bool = is_script
+        
+        self.parse_input()
 
     def parse_input(self) -> bool:
+        self.is_valid = True
         if self.is_script:
             if not self.determine_if_file():
                 log.error(
@@ -151,15 +154,18 @@ class SourceData:
             )
             return False
 
-    def get_source_list(self) -> list[tuple[str, str]]:
+    def get_source_list(self) -> list[tuple[str, str, bool]]:
         if not self.is_valid:
             return []
         elif not self.is_glob:
-            return [(self.absolute, self.destination)]
-        globbys: list[tuple[str, str]] = []
+            return [(self.absolute, self.destination, self.is_directory)]
+        globbys: list[tuple[str, str, bool]] = []
         for g in glob.glob(pathname=self.input, recursive=True, include_hidden=True):
+            gpath : str = ""
             if os.path.isabs(g):
-                globbys.append((g, g))
+                gpath = g
             else:
-                globbys.append((os.path.abspath(g), os.path.abspath(g)))
+                gpath = os.path.abspath(g)
+            globbys.append((gpath,gpath,os.path.isdir(g)))
+            
         return globbys
